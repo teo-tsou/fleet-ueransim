@@ -1,0 +1,11 @@
+defaultNamespace: ueransim
+name: ueransim
+
+dependsOn:
+  - name: multus-cni
+
+helm:
+  chart: charts
+  releaseName: ueransim
+  valuesFiles:
+    - values.yaml
