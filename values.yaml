@@ -1,6 +1,11 @@
 global:
+  # Multus L2 (ipvlan) DISABLED. A secondary L2 can't cross UCs over OVN-IC
+  # (same reason MetalLB L2 didn't). Cross-UC N2 rides the pod network via
+  # the IntEdge binding instead. With both off, the gNB pod has only eth0
+  # → binding N2/N3 to 0.0.0.0 is single-homed (no SCTP multi-homing of
+  # dead 10.100.50.x paths).
   n2network:
-    enabled: true
+    enabled: false
     name: n2network
     type: ipvlan
     masterIf: enp1s0
@@ -9,7 +14,7 @@ global:
     gatewayIP: 10.100.50.254
     excludeIP: 10.100.50.254
   n3network:
-    enabled: true
+    enabled: false
     name: n3network
     type: ipvlan
     masterIf: enp1s0
@@ -23,16 +28,19 @@ projectName: ueransim
 gnb:
   enabled: true
   n2if:
-    ipAddress: 10.100.50.250
+    ipAddress: 0.0.0.0     # unused now — ngapIp comes from the ngap.enabled branch
   n3if:
-    ipAddress: 10.100.50.236
+    ipAddress: 0.0.0.0     # → gtpIp: 0.0.0.0 (bind GTP-U on eth0; no Multus n3)
   amf:
     n2if:
-      ipAddress: 10.100.50.249
+      # The IntEdge binding creates this Service in the consumer UC and maps
+      # it to free5gC's AMF (core-5g VM-IP : NodePort) over the encrypted
+      # fabric. The gNB dials a stable local name — zero IPs.
+      ipAddress: amf.upstream.svc.cluster.local
       port: 38412
     service:
       ngap:
-        enabled: false
+        enabled: true      # → gNB ngapIp: 0.0.0.0 (reach AMF over pod-net)
   configuration: |-
     mcc: '208'
     mnc: '93'
@@ -77,7 +85,7 @@ ue:
         sd: 0x010203
     default-nssai:
       - sst: 1
-        sd: 1
+        sd: 0x010203
     integrity:
       IA1: true
       IA2: true
