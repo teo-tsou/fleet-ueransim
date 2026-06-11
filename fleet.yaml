@@ -1,9 +1,6 @@
 defaultNamespace: ueransim
 name: ueransim
 
-dependsOn:
-  - name: gtp5g
-
 helm:
   chart: charts
   releaseName: ueransim
