@@ -2,7 +2,7 @@ defaultNamespace: ueransim
 name: ueransim
 
 dependsOn:
-  - name: multus-cni
+  - name: gtp5g
 
 helm:
   chart: charts
