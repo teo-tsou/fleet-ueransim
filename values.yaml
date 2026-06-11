@@ -77,7 +77,7 @@ ue:
         sd: 0x010203
     default-nssai:
       - sst: 1
-        sd: 1
+        sd: 0x010203
     integrity:
       IA1: true
       IA2: true
