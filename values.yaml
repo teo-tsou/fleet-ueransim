@@ -1,9 +1,12 @@
 global:
-  # Multus L2 (ipvlan) DISABLED. A secondary L2 can't cross UCs over OVN-IC
-  # (same reason MetalLB L2 didn't). Cross-UC N2 rides the pod network via
-  # the IntEdge binding instead. With both off, the gNB pod has only eth0
-  # → binding N2/N3 to 0.0.0.0 is single-homed (no SCTP multi-homing of
-  # dead 10.100.50.x paths).
+  # EDGE-UPF SPLIT TOPOLOGY — N2 and N3 are NOT symmetric here:
+  #   * N2 (gNB→AMF) CROSSES UCs → the AMF lives on the core UC. A Multus L2
+  #     can't cross UCs over OVN-IC (same reason MetalLB L2 didn't), so N2
+  #     rides the pod network via the IntEdge `amf` binding. n2network OFF.
+  #   * N3 (gNB→UPF) is LOCAL → the UPF (fleet-free5gc-upf) sits in THIS edge
+  #     UC right next to the gNB. The SMF hands the gNB the edge UPF's N3 ipvlan
+  #     endpoint (10.100.50.233), so the gNB's GTP-U MUST be on that same local
+  #     ipvlan L2. n3network ON. This traffic never leaves the edge UC.
   n2network:
     enabled: false
     name: n2network
@@ -14,7 +17,7 @@ global:
     gatewayIP: 10.100.50.254
     excludeIP: 10.100.50.254
   n3network:
-    enabled: false
+    enabled: true
     name: n3network
     type: ipvlan
     masterIf: enp1s0
@@ -30,7 +33,11 @@ gnb:
   n2if:
     ipAddress: 0.0.0.0     # unused now — ngapIp comes from the ngap.enabled branch
   n3if:
-    ipAddress: 0.0.0.0     # → gtpIp: 0.0.0.0 (bind GTP-U on eth0; no Multus n3)
+    # gNB's GTP-U (N3) IP on the LOCAL edge ipvlan, same /29 as the edge UPF's
+    # N3 endpoint (10.100.50.233). .233 = UPF, .238 = excluded gateway → use
+    # .234. This becomes both the Multus ipvlan IP and the gNB's gtpIp, so
+    # GTP-U reaches the co-located edge UPF over local L2.
+    ipAddress: 10.100.50.234
   amf:
     n2if:
       # The IntEdge binding creates this Service in the consumer UC and maps
